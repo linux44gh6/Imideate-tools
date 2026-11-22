@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import Script from 'next/script'
 import QRCode from 'qrcode'
 import {
   ArrowDownToLine,
@@ -57,7 +58,7 @@ const FEATURES = [
   { icon: Clock3, title: 'Ready when you are', body: 'No accounts, no downloads, no waiting around. Just open a tool and get going.' },
 ]
 
-const POLICIES: Record<string, React.ReactNode> = {
+const POLICIES: Record<string, ReactNode> = {
   'Privacy Policy':
     'QuickToolsHub processes your selected files and text locally in your browser. We do not upload or retain the content you use with these tools. Basic website analytics or advertising partners may use cookies where enabled. Contact us to ask about privacy practices.',
   'Terms of Service':
@@ -114,19 +115,105 @@ function calculateAge(birth: string, target: string) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Shared UI                                                                 */
+/*  Adsterra Components                                                       */
 /* -------------------------------------------------------------------------- */
 
-function AdSlot({ size }: { size: string }) {
+export function AdsterraBanner({
+  adKey,
+  width,
+  height,
+  className = '',
+}: {
+  adKey: string
+  width: number
+  height: number
+  className?: string
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || !adKey) return
+
+    el.innerHTML = ''
+
+    const confScript = document.createElement('script')
+    confScript.type = 'text/javascript'
+    confScript.text = `
+      window.atOptions = {
+        'key' : '${adKey}',
+        'format' : 'iframe',
+        'height' : ${height},
+        'width' : ${width},
+        'params' : {}
+      };
+    `
+
+    const invokeScript = document.createElement('script')
+    invokeScript.type = 'text/javascript'
+    invokeScript.src = `https://bicea.org/22/${adKey}`
+
+    el.appendChild(confScript)
+    el.appendChild(invokeScript)
+
+    return () => {
+      el.innerHTML = ''
+    }
+  }, [adKey, width, height])
+
   return (
-    <div className="ad-slot" aria-label="Advertisement placement">
+    <div className={`ad-slot ${className}`.trim()} aria-label="Advertisement placement">
       <span>ADVERTISEMENT</span>
-      <div>{size}</div>
+      <div ref={containerRef} style={{ width: `${width}px`, height: `${height}px` }} />
     </div>
   )
 }
 
-function PrivacyNote({ children }: { children: React.ReactNode }) {
+export function AdsterraNative({
+  containerId,
+  scriptSrc,
+}: {
+  containerId: string
+  scriptSrc: string
+}) {
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = wrapperRef.current
+    if (!el || !containerId || !scriptSrc) return
+
+    el.innerHTML = ''
+
+    const containerDiv = document.createElement('div')
+    containerDiv.id = containerId
+
+    const script = document.createElement('script')
+    script.async = true
+    script.setAttribute('data-cfasync', 'false')
+    script.src = scriptSrc
+
+    el.appendChild(script)
+    el.appendChild(containerDiv)
+
+    return () => {
+      el.innerHTML = ''
+    }
+  }, [containerId, scriptSrc])
+
+  return (
+    <div className="ad-slot" aria-label="Advertisement placement">
+      <span>ADVERTISEMENT</span>
+      <div ref={wrapperRef} />
+      <Script src={scriptSrc} async data-cfasync="false" strategy="lazyOnload" />
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Shared UI                                                                 */
+/* -------------------------------------------------------------------------- */
+
+function PrivacyNote({ children }: { children: ReactNode }) {
   return (
     <p className="privacy-note">
       <ShieldCheck size={15} /> {children}
@@ -160,7 +247,6 @@ function ImageCompressor() {
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Preview URL for the original file (created once per file, revoked on change).
   useEffect(() => {
     if (!file) {
       setOriginalUrl('')
@@ -171,7 +257,6 @@ function ImageCompressor() {
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  // Re-compress whenever the file or quality changes.
   useEffect(() => {
     if (!file) return
 
@@ -304,7 +389,8 @@ function ImageCompressor() {
       </div>
 
       <aside className="ad-side">
-        <AdSlot size="300 × 250" />
+        {/* ADSTERRA_BANNER_SLOT: 300x250 */}
+        <AdsterraBanner adKey="b577bf89dba4d7c6548bec10b88645cb" width={300} height={250} />
       </aside>
     </div>
   )
@@ -606,8 +692,19 @@ export function UtilityHub() {
         </section>
 
         <div className="leaderboard-wrap">
-          {/* ADSTERRA_BANNER_SLOT */}
-          <AdSlot size="728 × 90" />
+          {/* ADSTERRA_BANNER_SLOT: 728x90 (Desktop) & 320x50 (Mobile) */}
+          <AdsterraBanner
+            adKey="144ab123380c3fea8b4a93437f0c651f"
+            width={728}
+            height={90}
+            className="hidden md:flex"
+          />
+          <AdsterraBanner
+            adKey="d43c27a95a546933c6da031dd1aa6e7f"
+            width={320}
+            height={50}
+            className="flex md:hidden"
+          />
         </div>
 
         {/* Tools */}
@@ -679,8 +776,11 @@ export function UtilityHub() {
         </section>
 
         <div className="native-ad-wrap">
-          {/* ADSTERRA_BANNER_SLOT */}
-          <AdSlot size="Native banner" />
+          {/* ADSTERRA_BANNER_SLOT: Native Banner */}
+          <AdsterraNative
+            containerId="container-533407b2291bf2d2ed755b1e7bf12f2b"
+            scriptSrc="https://bicea.org/21/533407b2291bf2d2ed755b1e7bf12f2b"
+          />
         </div>
 
         {/* Features */}

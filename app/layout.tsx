@@ -47,6 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <script data-cfasync="false" src="https://bicea.org/14/4fd414177dfabf70e93a699f8a69b5c7"></script>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
